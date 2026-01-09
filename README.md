@@ -2,9 +2,9 @@
 
 > 一个强大的 Tampermonkey 用户脚本，帮助您快速预约纪念币，支持多家银行官网。
 
-[![Version](https://img.shields.io/badge/version-2.0-blue.svg)](https://github.com/your-repo)
+[![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/jiangbkvir/jinianbi)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![GreasyFork](https://img.shields.io/badge/GreasyFork-Download-orange.svg)](https://greasyfork.org/scripts/521357)
+[![GreasyFork](https://img.shields.io/badge/GreasyFork-Install-orange.svg)](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
 
 ## 📖 介绍
 
@@ -41,6 +41,8 @@
 > 💡 **提示**：点击链接即可直接跳转到对应银行的预约页面。建议使用电脑端浏览器配合手机端同时预约，提高成功率。
 
 ## 📦 安装
+
+> 🌐 **Greasy Fork 页面**: [https://greasyfork.org/zh-CN/scripts/521357-纪念币预约辅助工具](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
 
 ### 1. 安装 Tampermonkey
 
