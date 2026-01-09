@@ -1,5 +1,7 @@
 # 纪念币预约辅助工具
 
+> 测试只修改 README 的情况
+
 > 一个强大的 Tampermonkey 用户脚本，帮助您快速预约纪念币，支持多家银行官网。
 
 [![Version](https://img.shields.io/badge/version-2.0-blue.svg)](https://github.com/your-repo)
