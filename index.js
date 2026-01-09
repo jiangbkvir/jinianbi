@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         纪念币预约辅助工具
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @description  纪念币预约辅助工具，支持数据导入导出、智能填充、格式验证等功能，提升预约效率
 // @author       jiangbkvir
 // @include        *://*.icbc.com.cn/*
@@ -559,6 +559,8 @@ const bankObj = {
                     background: STYLES.COLORS.SUCCESS,
                     color: STYLES.COLORS.WHITE
                 });
+                // 设置 tabindex="-1"，使 Tab 键不会跳到折叠按钮
+                toggleButton.setAttribute('tabindex', '-1');
 
                 toggleButton.addEventListener('click', () => {
                     const isCollapsed = toggleButton.innerText === '▼';
@@ -575,6 +577,8 @@ const bankObj = {
                     background: STYLES.COLORS.DANGER,
                     fontSize: '20px'
                 });
+                // 设置 tabindex="-1"，使 Tab 键不会跳到删除按钮
+                deleteButton.setAttribute('tabindex', '-1');
 
                 deleteButton.addEventListener('mouseenter', () => {
                     deleteButton.style.background = '#ff7875';
@@ -688,6 +692,8 @@ const bankObj = {
                     padding: '2px 6px',
                     flexShrink: '0'
                 });
+                // 设置 tabindex="-1"，使 Tab 键不会跳到复制按钮
+                copyButton.setAttribute('tabindex', '-1');
 
                 copyButton.addEventListener('click', () => {
                     const inputValue = input.value;
