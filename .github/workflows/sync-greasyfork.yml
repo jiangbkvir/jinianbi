@@ -1,0 +1,66 @@
+name: 同步到 Greasy Fork
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '纪念币预约辅助工具.user.js'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 检查版本号是否更新
+        id: check-version
+        run: |
+          echo "检查纪念币预约辅助工具.user.js 版本变化..."
+
+          # 获取当前版本号
+          CURRENT_VERSION=$(grep -m1 "@version" 纪念币预约辅助工具.user.js | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
+          echo "当前版本: $CURRENT_VERSION"
+
+          # 获取上一个提交的版本号
+          PREV_VERSION=$(git show HEAD^:纪念币预约辅助工具.user.js 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+          echo "上一个版本: $PREV_VERSION"
+
+          if [ "$CURRENT_VERSION" != "$PREV_VERSION" ] && [ -n "$CURRENT_VERSION" ]; then
+            echo "should_sync=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "✅ 版本号已更新: $PREV_VERSION → $CURRENT_VERSION，将触发同步"
+          else
+            echo "should_sync=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ 版本号未变化，跳过同步"
+          fi
+
+      - name: 触发 Greasy Fork 同步
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          echo "🚀 触发 Greasy Fork Webhook 同步..."
+          echo "版本: ${{ steps.check-version.outputs.version }}"
+
+          # 发送 webhook 请求
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
+            "${{ secrets.GREASYFORK_WEBHOOK_URL }}")
+
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
+            echo "✅ Webhook 触发成功 (HTTP $RESPONSE)"
+          else
+            echo "⚠️ Webhook 响应: $RESPONSE"
+          fi
+
+      - name: 同步失败提示
+        if: steps.check-version.outputs.should_sync == 'false'
+        run: |
+          echo "=========================================="
+          echo "ℹ️ 脚本文件已修改，但版本号未更新"
+          echo "当前版本未变化，未触发 Greasy Fork 同步"
+          echo "=========================================="
