@@ -2,7 +2,7 @@
 // @name         纪念币预约辅助工具
 // @namespace    http://tampermonkey.net/
 // @version      2.1.1
-// @description  测试自动发布 版本2.1.1 - 纪念币预约辅助工具，支持数据导入导出、智能填充、格式验证等功能，提升预约效率
+// @description  测试同步 - 版本未更新 - 纪念币预约辅助工具，支持数据导入导出、智能填充、格式验证等功能，提升预约效率
 // @author       jiangbkvir
 // @include        *://*.icbc.com.cn/*
 // @include        *://*.ccb.com/*
