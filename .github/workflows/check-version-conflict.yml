@@ -1,0 +1,61 @@
+name: 检查版本号冲突
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - main
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 获取源分支版本号
+        id: source-version
+        run: |
+          SOURCE_VERSION=$(grep -m1 "@version" 纪念币预约辅助工具.user.js | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
+          echo "version=$SOURCE_VERSION" >> $GITHUB_OUTPUT
+          echo "源分支版本: $SOURCE_VERSION"
+
+      - name: 获取目标分支版本号
+        id: target-version
+        run: |
+          git fetch origin main
+          TARGET_VERSION=$(git show origin/main:纪念币预约辅助工具.user.js 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+          echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          echo "目标分支版本: $TARGET_VERSION"
+
+      - name: 验证版本号不同
+        run: |
+          SOURCE_VERSION="${{steps.source-version.outputs.version}}"
+          TARGET_VERSION="${{steps.target-version.outputs.version}}"
+
+          echo "=== 版本号对比 ==="
+          echo "源分支: $SOURCE_VERSION"
+          echo "目标分支(main): $TARGET_VERSION"
+
+          if [ "$SOURCE_VERSION" = "$TARGET_VERSION" ] && [ -n "$SOURCE_VERSION" ]; then
+            echo "❌ 错误：版本号相同！"
+            echo "   请更新源分支的版本号（@version）"
+            exit 1
+          fi
+
+          echo "✅ 版本号检查通过"
+
+      - name: 发布评论
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## ❌ 版本号冲突\n\n源分支和 main 分支的版本号相同：**${{steps.source-version.outputs.version}}**\n\n请先更新版本号再合并 PR。\n\n```bash\n# 更新版本号示例\nsed -i "" "s/@version.*/@version      x.x.x/" 纪念币预约辅助工具.user.js\n```'
+            })
