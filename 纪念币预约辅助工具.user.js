@@ -1840,10 +1840,11 @@ const bankObj = {
             buttonsContainer.appendChild(collapseButton);
 
             // 将按钮容器添加到主容器（在卡片容器之后）
-            const mainContainer = document.getElementById('mainContainer');
-            if (mainContainer) {
-                mainContainer.appendChild(buttonsContainer);
-            }
+            // const mainContainer = document.getElementById('mainContainer');
+            // if (mainContainer) {
+            //     mainContainer.appendChild(buttonsContainer);
+            // }
+            container.appendChild(buttonsContainer)
         }
 
         // 展开按钮
