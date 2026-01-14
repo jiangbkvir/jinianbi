@@ -17,6 +17,7 @@
 // @include      *://*.96262.com/*
 // @include      *://*.abchina.com/*
 // @include      *://*.abchina.com.cn/*
+// @include      *://jiangbkvir.github.io/jinianbi/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
