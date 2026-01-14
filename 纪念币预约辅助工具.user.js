@@ -109,6 +109,7 @@ const bankObj = {
             '[name="certificateNo"]',
             '[name="idCard"]',
             '[name="idCardNo"]',
+            '[name="IDCardNo"]',
             '.cert-no-input',
             '.id-card-input',
             '.certificate-input',
