@@ -23,10 +23,18 @@ jobs:
       - name: 检查脚本文件是否修改
         id: check-file-changed
         run: |
+          # 禁用路径引用，正确显示中文文件名
+          git config core.quotepath false
           git fetch origin main
-          if git diff --name-only origin/main...HEAD | grep -q "纪念币预约辅助工具.user.js"; then
+
+          # 检查 .user.js 文件是否被修改
+          if git diff --name-only origin/main...HEAD | grep -q "\.user\.js$"; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "✅ 脚本文件已修改，需要检查版本号"
+
+            # 显示具体修改的文件
+            echo "修改的文件:"
+            git diff --name-only origin/main...HEAD | grep "\.user\.js$"
           else
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "ℹ️ 脚本文件未修改，跳过版本号检查"
