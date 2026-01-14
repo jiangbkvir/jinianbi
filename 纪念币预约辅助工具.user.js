@@ -4,19 +4,19 @@
 // @version      2.2.0
 // @description  纪念币预约辅助工具，支持数据导入导出、智能填充、格式验证等功能，提升预约效率
 // @author       jiangbkvir
-// @include        *://*.icbc.com.cn/*
-// @include        *://*.ccb.com/*
-// @include        *://*.95559.com.cn/*
-// @include        *://*.hxb.com.cn/*
-// @include        *://*.spdb.com.cn/*
-// @include        *://*.psbc.com/*
-// @include        *://*.abchina.com/*
-// @include        *://*.boc.cn/*
-// @include        *://*.cmcoins.boc.cn/*
-// @include        *://*.hsbank.cc/*
-// @include        *://*.startbank.com.cn/*
-// @include        *://*.bankofchangsha.com/*
-// @include        *://*.96262.com/*
+// @include      *://*.ccb.com/*
+// @include      *://*.psbc.com/*
+// @include      *://*.boc.cn/*
+// @include      *://*.cmcoins.boc.cn/*
+// @include      *://*.95559.com.cn/*
+// @include      *://*.hxb.com.cn/*
+// @include      *://*.icbc.com.cn/*
+// @include      *://*.spdb.com.cn/*
+// @include      *://*.hsbank.cc/*
+// @include      *://*.startbank.com.cn/*
+// @include      *://*.96262.com/*
+// @include      *://*.abchina.com/*
+// @include      *://*.abchina.com.cn/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -42,7 +42,7 @@ const bankObj = {
     pc: "https://cmcoins.boc.cn/BOC15_CoinSeller/welcome.html"
   },
   交通银行: {
-    mobile: "https://apply.95559.com.cn/personbank/commemorativeOrderCoins/index.html#/order"
+    pc: "https://apply.95559.com.cn/personbank/commemorativeOrderCoins/index.html#/order"
   },
   华夏银行: {
     mobile: "https://mcm.hxb.com.cn/m/coin/#/coinAct?publish_channel_id=003"
@@ -60,9 +60,6 @@ const bankObj = {
   晋商银行: {
     mobile: "https://upbp.startbank.com.cn/rvcc/JNB/index.html?channel=01#/"
   },
-//   长沙银行: {
-//     wechat: "https://open.weixin.qq.com/connect/oauth2/authorize?response_type=code&scope=snsapi_base&appid=wxc707e7dcce7d1b45&redirect_uri=https%3A%2F%2Fwx.bankofchangsha.com%2Fwechatcustomer%2Ffrontend%2FwechatRedirect&state=https%3A%2F%2Fwx.bankofchangsha.com%2Fwechatcustomer%2Ffrontend%2FbranchService%2FbranchService#wechat_redirect"
-//   },
   陕西农信: {
     pc: "https://www.96262.com/xh/jnb/index.shtml"
   },
@@ -86,6 +83,8 @@ const bankObj = {
             '#name',
             '#userName',
             '#USR_NM',             // 建设银行
+            '#rarewords > div.layout-right > div > div > div > input',  // 中国银行移动端
+            'input.el-input__inner[maxlength="20"]',  // 农业银行移动端
             '[name="custName"]',
             '[name="customerName"]',
             '[name="userName"]',
@@ -109,6 +108,9 @@ const bankObj = {
             '[name="certificateNo"]',
             '[name="idCard"]',
             '[name="idCardNo"]',
+            '[name="IDCardNo"]',
+            '[name="identNo"]',    // 农业银行移动端
+            '.information-input:nth-child(3) input.el-input__inner',  // 农业银行移动端（证件号码）
             '.cert-no-input',
             '.id-card-input',
             '.certificate-input',
@@ -126,6 +128,8 @@ const bankObj = {
             '#mobileNo',
             '#tel',
             '#MBLPH_NO',           // 建设银行
+            '#txt_mobile_1956715', // 中国银行PC端
+            '.information-input:nth-child(4) input.el-input__inner',  // 农业银行移动端（手机号码）
             '[name="mobile"]',
             '[name="phone"]',
             '[name="phoneNumber"]',
@@ -165,8 +169,15 @@ const bankObj = {
     };
 
 
-    // 页面加载完成后执行
-    window.addEventListener('load', () => {
+    // DOM 加载完成后立即执行（不等待图片等资源）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        // DOM 已经加载完成，直接执行
+        init();
+    }
+
+    function init() {
         console.log('=== 纪念币预约辅助工具启动 ===');
         console.log('当前网站:', window.location.hostname);
         console.log('当前URL:', window.location.href);
@@ -2012,14 +2023,28 @@ const bankObj = {
         // 然后调用 addButtons，它会将按钮容器插入到卡片容器之前
         addButtons();
 
-        if (savedState.collapsed) {
-            container.style.display = 'none';
-        }
+        // 确保 body 存在后再添加元素
+        function addToBody() {
+            if (!document.body) {
+                console.warn('[初始化] body 尚未创建，延迟添加...');
+                setTimeout(addToBody, 50);
+                return;
+            }
 
-        if (savedPosition.top === undefined) {
+            // 添加主容器到页面
             document.body.appendChild(container);
+            console.log('[初始化] 主容器已添加到页面');
+
+            // 如果之前是折叠状态，显示展开按钮
+            if (savedState.collapsed) {
+                container.style.display = 'none';
+                expandButton.style.display = 'inline-block';
+                console.log('[初始化] 恢复折叠状态，显示展开按钮');
+            }
+
+            console.log('=== 纪念币预约辅助工具初始化完成 ===');
         }
 
-        console.log('=== 纪念币预约辅助工具初始化完成 ===');
-    });
+        addToBody();
+    }
 })();
