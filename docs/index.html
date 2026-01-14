@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纪念币预约辅助工具 - 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .link-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .test-link {
+            display: inline-block;
+            padding: 10px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+            text-align: center;
+        }
+
+        .test-link:hover {
+            background: #5568d3;
+        }
+
+        .test-link.mobile {
+            background: #48bb78;
+        }
+
+        .test-link.mobile:hover {
+            background: #38a169;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 30px;
+            color: #856404;
+        }
+
+        .notice strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 纪念币预约辅助工具</h1>
+            <p>测试页面 - 用于测试脚本功能</p>
+        </div>
+
+        <div class="notice">
+            <strong>⚠️ 使用说明</strong>
+            <p>这些是模拟的银行预约页面，用于测试脚本功能。点击下方链接即可访问对应银行的测试页面。</p>
+            <p>请确保已安装 Tampermonkey 和纪念币预约辅助工具脚本。</p>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <h2>🏦 工商银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/工商银行PC端.html" class="test-link" target="_blank">PC端测试</a>
+                    <a href="test-pages/工商银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 建设银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/建设银行PC端.html" class="test-link" target="_blank">PC端测试</a>
+                    <a href="test-pages/建设银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 中国银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/中国银行PC端.html" class="test-link" target="_blank">PC端测试</a>
+                    <a href="test-pages/中国银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 农业银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/农业银行PC端.html" class="test-link" target="_blank">PC端测试</a>
+                    <a href="test-pages/农业银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 交通银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/交通银行PC端.html" class="test-link" target="_blank">PC端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 邮政储蓄银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/邮政储蓄银行PC.html" class="test-link" target="_blank">PC端测试</a>
+                    <a href="test-pages/邮政储蓄银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 华夏银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/华夏银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏦 浦发银行</h2>
+                <div class="link-group">
+                    <a href="test-pages/浦发银行移动端.html" class="test-link mobile" target="_blank">移动端测试</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://github.com/jiangbkvir/jinianbi" target="_blank">GitHub 仓库</a> |
+                <a href="https://greasyfork.org/zh-CN/scripts/521357" target="_blank">Greasy Fork</a>
+            </p>
+            <p style="margin-top: 10px;">Made with ❤️ by jiangbkvir</p>
+        </div>
+    </div>
+</body>
+</html>
