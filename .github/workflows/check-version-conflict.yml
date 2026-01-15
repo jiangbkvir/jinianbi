@@ -1,88 +1,111 @@
-name: 检查版本号冲突
+name: 同步到 Greasy Fork
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push:
     branches:
       - main
+    paths:
+      - '纪念币预约辅助工具.user.js'
 
+# 设置工作流权限
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
+  releases: write
 
 jobs:
-  check-version:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # 增加深度以获取完整的提交历史
 
-      - name: 检查脚本文件是否修改
-        id: check-file-changed
+      - name: 检查版本号是否更新
+        id: check-version
         run: |
-          # 禁用路径引用，正确显示中文文件名
-          git config core.quotepath false
-          git fetch origin main
+          FILE="纪念币预约辅助工具.user.js"
+          echo "检查 $FILE 版本..."
 
-          # 检查 .user.js 文件是否被修改
-          if git diff --name-only origin/main...HEAD | grep -q "\.user\.js$"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "✅ 脚本文件已修改，需要检查版本号"
+          # 获取当前脚本文件的版本号
+          CURRENT_VERSION=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
+          echo "脚本当前版本: $CURRENT_VERSION"
 
-            # 显示具体修改的文件
-            echo "修改的文件:"
-            git diff --name-only origin/main...HEAD | grep "\.user\.js$"
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ 脚本文件未修改，跳过版本号检查"
-          fi
-
-      - name: 获取源分支版本号
-        if: steps.check-file-changed.outputs.changed == 'true'
-        id: source-version
-        run: |
-          SOURCE_VERSION=$(grep -m1 "@version" 纪念币预约辅助工具.user.js | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
-          echo "version=$SOURCE_VERSION" >> $GITHUB_OUTPUT
-          echo "源分支版本: $SOURCE_VERSION"
-
-      - name: 获取目标分支版本号
-        if: steps.check-file-changed.outputs.changed == 'true'
-        id: target-version
-        run: |
-          git fetch origin main
-          TARGET_VERSION=$(git show origin/main:纪念币预约辅助工具.user.js 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
-          echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
-          echo "目标分支版本: $TARGET_VERSION"
-
-      - name: 验证版本号不同
-        if: steps.check-file-changed.outputs.changed == 'true'
-        run: |
-          SOURCE_VERSION="${{steps.source-version.outputs.version}}"
-          TARGET_VERSION="${{steps.target-version.outputs.version}}"
-
-          echo "=== 版本号对比 ==="
-          echo "源分支: $SOURCE_VERSION"
-          echo "目标分支(main): $TARGET_VERSION"
-
-          if [ "$SOURCE_VERSION" = "$TARGET_VERSION" ] && [ -n "$SOURCE_VERSION" ]; then
-            echo "❌ 错误：版本号相同！"
-            echo "   请更新源分支的版本号（@version）"
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "❌ 错误：未在脚本中找到 @version"
             exit 1
           fi
 
-          echo "✅ 版本号检查通过"
+          # 获取上一个 commit 的版本号
+          PREV_VERSION=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+          echo "上一个版本: $PREV_VERSION"
 
-      - name: 发布评论
-        if: failure() && steps.check-file-changed.outputs.changed == 'true'
-        uses: actions/github-script@v7
+          # 强校验逻辑：如果你直接 push 到 main 但没改版本号，直接让任务失败
+          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+            echo "=========================================="
+            echo "❌ 报错：脚本内容已修改，但版本号 ($CURRENT_VERSION) 未更新！"
+            echo "请修改 @version 后重新提交，否则 Greasy Fork 不会同步。"
+            echo "=========================================="
+            exit 1 
+          fi
+
+          echo "should_sync=true" >> $GITHUB_OUTPUT
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ 版本已从 $PREV_VERSION 更新至 $CURRENT_VERSION"
+
+      - name: 触发 Greasy Fork 同步
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          echo "🚀 触发 Greasy Fork Webhook..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
+            "${{ secrets.GREASYFORK_WEBHOOK_URL }}")
+
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
+            echo "✅ Webhook 触发成功 (HTTP $RESPONSE)"
+          else
+            echo "❌ Webhook 失败 (HTTP $RESPONSE)"
+            exit 1
+          fi
+
+      - name: 生成 Release Notes
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          VERSION="${{ steps.check-version.outputs.version }}"
+          # 获取最后一条提交信息作为更新内容
+          COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
+
+          # 修复 101 行报错：移除 EOF 的单引号，并使用标准的 shell 变量解析
+          cat <<EOF > release-notes.md
+## Release v${VERSION}
+
+### 📝 更新内容
+${COMMIT_LOG}
+
+### 📦 安装方式
+**Greasy Fork (推荐):**
+https://greasyfork.org/zh-CN/scripts/521357
+
+**直接安装:**
+点击下方的 \`纪念币预约辅助工具.user.js\` 文件
+
+### 🔗 相关链接
+- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
+- [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)
+
+---
+自动同步到 Greasy Fork
+EOF
+
+      - name: 创建 GitHub Release
+        if: steps.check-version.outputs.should_sync == 'true'
+        uses: softprops/action-gh-release@v1
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## ❌ 版本号冲突\n\n源分支和 main 分支的版本号相同：**${{steps.source-version.outputs.version}}**\n\n请先更新版本号再合并 PR。\n\n```bash\n# 更新版本号示例\nsed -i "" "s/@version.*/@version      x.x.x/" 纪念币预约辅助工具.user.js\n```'
-            })
+          tag_name: v${{ steps.check-version.outputs.version }}
+          name: Release v${{ steps.check-version.outputs.version }}
+          body_path: release-notes.md
+          files: 纪念币预约辅助工具.user.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
