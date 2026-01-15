@@ -1,0 +1,120 @@
+name: CI / Release / Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '纪念币预约辅助工具.user.js'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  releases: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # =========================
+  # Greasy Fork 同步 + Release
+  # =========================
+  greasyfork:
+    if: contains(github.event.head_commit.modified, '纪念币预约辅助工具.user.js')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 检查版本号是否更新
+        id: check-version
+        run: |
+          FILE="纪念币预约辅助工具.user.js"
+
+          CURRENT_VERSION=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+          PREV_VERSION=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
+
+          echo "当前版本: $CURRENT_VERSION"
+          echo "上一个版本: $PREV_VERSION"
+
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "❌ 未找到 @version"
+            exit 1
+          fi
+
+          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+            echo "❌ 脚本已修改但版本号未更新"
+            exit 1
+          fi
+
+          echo "should_sync=true" >> $GITHUB_OUTPUT
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: 触发 Greasy Fork 同步
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
+            "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
+
+      - name: 生成 Release Notes
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          VERSION="${{ steps.check-version.outputs.version }}"
+          LOG=$(git log -1 --pretty=format:"- %s")
+
+          cat <<EOF > release-notes.md
+## Release v${VERSION}
+
+### 📝 更新内容
+${LOG}
+
+### 📦 安装方式
+https://greasyfork.org/zh-CN/scripts/521357
+
+---
+自动同步
+EOF
+
+      - name: 创建 GitHub Release
+        if: steps.check-version.outputs.should_sync == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.check-version.outputs.version }}
+          name: Release v${{ steps.check-version.outputs.version }}
+          body_path: release-notes.md
+          files: 纪念币预约辅助工具.user.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # =================
+  # GitHub Pages 部署
+  # =================
+  pages:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.modified, 'docs/')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
