@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         纪念币预约辅助工具
 // @namespace    http://tampermonkey.net/
-// @version      2.2.2
+// @version      2.2.3
 // @description  纪念币预约辅助工具，支持数据导入导出、智能填充、格式验证等功能，提升预约效率
 // @author       jiangbkvir
 // @include      *://*.ccb.com/*
@@ -24,7 +24,6 @@
 // @license      MIT
 // @downloadURL https://update.greasyfork.org/scripts/521357/%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7.user.js
 // @updateURL  https://update.greasyfork.org/scripts/521357/%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7.user.js
-// @test-comment Gemini-CLI-test-no-version-change
 // ==/UserScript==
 
 
