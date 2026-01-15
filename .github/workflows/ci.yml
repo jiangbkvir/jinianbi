@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: write
-  releases: write
   pages: write
   id-token: write
 
