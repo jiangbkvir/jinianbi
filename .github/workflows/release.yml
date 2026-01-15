@@ -62,8 +62,7 @@ jobs:
           echo "🚀 触发 Greasy Fork Webhook..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
-            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' 
-            "${{ secrets.GREASYFORK_WEBHOOK_URL }}")
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' "${{ secrets.GREASYFORK_WEBHOOK_URL }}") # 修复：将最后一个参数移动到同一行
 
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
             echo "✅ Webhook 触发成功 (HTTP $RESPONSE)"
@@ -89,7 +88,9 @@ jobs:
           echo "https://greasyfork.org/zh-CN/scripts/521357" >> release-notes.md
           echo "" >> release-notes.md
           echo "**直接安装:**" >> release-notes.md
-          echo "点击下方的 \`纪念币预约辅助工具.user.js\` 文件" >> release-notes.md
+          echo "点击下方的 
+纪念币预约辅助工具.user.js
+ 文件" >> release-notes.md
           echo "" >> release-notes.md
           echo "### 🔗 相关链接" >> release-notes.md
           echo "- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)" >> release-notes.md
