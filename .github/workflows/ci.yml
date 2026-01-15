@@ -1,4 +1,4 @@
-name: CI / GreasyFork / Pages
+name: 持续集成 / Greasy Fork 同步 / Pages 部署
 
 on:
   push:
@@ -20,15 +20,16 @@ concurrency:
 
 jobs:
   greasyfork:
+    name: 同步 Greasy Fork 并发布 Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect script change
+      - name: 检测脚本是否发生变化
         id: detect
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q "纪念币预约辅助工具.user.js"; then
@@ -37,7 +38,7 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check version
+      - name: 校验脚本版本号是否更新
         if: steps.detect.outputs.changed == 'true'
         id: version
         run: |
@@ -46,18 +47,18 @@ jobs:
           PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
 
           if [ -z "$CUR" ]; then
-            echo "no version"
+            echo "❌ 未找到 @version"
             exit 1
           fi
 
           if [ "$CUR" = "$PRE" ]; then
-            echo "version not bumped"
+            echo "❌ 已修改脚本但版本号未更新"
             exit 1
           fi
 
           echo "version=$CUR" >> $GITHUB_OUTPUT
 
-      - name: Trigger GreasyFork
+      - name: 触发 Greasy Fork 同步
         if: steps.detect.outputs.changed == 'true'
         run: |
           curl -X POST \
@@ -65,7 +66,7 @@ jobs:
             -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
 
-      - name: Generate release notes
+      - name: 生成发布说明（Release Notes）
         if: steps.detect.outputs.changed == 'true'
         run: |
           echo "## Release v${{ steps.version.outputs.version }}" > release-notes.md
@@ -76,7 +77,7 @@ jobs:
           echo "---" >> release-notes.md
           echo "自动同步到 Greasy Fork" >> release-notes.md
 
-      - name: Create GitHub Release
+      - name: 创建 GitHub Release
         if: steps.detect.outputs.changed == 'true'
         uses: softprops/action-gh-release@v1
         with:
@@ -88,15 +89,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   pages:
+    name: 部署 GitHub Pages
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-      - name: Detect docs change
+      - name: 检测文档是否发生变化
         id: detect
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q "^docs/"; then
@@ -105,17 +108,17 @@ jobs:
             echo "deploy=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Setup Pages
+      - name: 配置 GitHub Pages
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/configure-pages@v4
 
-      - name: Upload Pages
+      - name: 上传 Pages 构建产物
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
-      - name: Deploy Pages
+      - name: 部署到 GitHub Pages
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         id: deploy
         uses: actions/deploy-pages@v4
