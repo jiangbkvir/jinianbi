@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Debug update output
-        run: echo "DEBUG: steps.check.outputs.update is '${{ steps.check.outputs.update }}'"
+        run: echo "DEBUG: steps.check.outputs.update is ${{ steps.check.outputs.update }}"
 
       - name: 触发 Greasy Fork 同步
         if: steps.check.outputs.update == 'true'
