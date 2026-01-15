@@ -92,18 +92,13 @@ jobs:
             COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
           fi
 
-          # 生成规范的 Release Notes - 使用 Python 避免 shell 转义问题
-          python3 << 'PYTHON_EOF'
-import os
-
-version = os.environ.get('VERSION', 'Unknown')
-commit_log = os.environ.get('COMMIT_LOG', 'No commits')
-
-content = f"""## Release v{version}
+          # 生成规范的 Release Notes
+          cat > release-notes.md <<EOF
+## Release v$VERSION
 
 ### 📝 更新内容
 
-{commit_log}
+$COMMIT_LOG
 
 ### 📦 安装方式
 
@@ -111,7 +106,7 @@ content = f"""## Release v{version}
 https://greasyfork.org/zh-CN/scripts/521357
 
 **直接安装:**
-点击下方的 `纪念币预约辅助工具.user.js` 文件
+点击下方的 \`纪念币预约辅助工具.user.js\` 文件
 
 ### 🔗 相关链接
 - [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
@@ -120,16 +115,10 @@ https://greasyfork.org/zh-CN/scripts/521357
 
 ---
 自动同步到 Greasy Fork
-"""
+EOF
 
-          with open('release-notes.md', 'w', encoding='utf-8') as f:
-              f.write(content)
-          
-          print("Release Notes 已生成")
-PYTHON_EOF
-          
-          export VERSION
-          export COMMIT_LOG
+          echo "Release Notes 已生成"
+          cat release-notes.md
 
       - name: 创建 GitHub Release
         if: steps.check-version.outputs.should_sync == 'true'
