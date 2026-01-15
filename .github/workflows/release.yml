@@ -18,8 +18,8 @@ permissions:
 jobs:
   # 任务一：检查版本并同步到 Greasy Fork
   sync-and-release:
-    # 仅当 userscript 文件变化时运行
-    if: "contains(github.event.head_commit.modified, '纪念币预约辅助工具.user.js') || github.event_name == 'workflow_dispatch'"
+    # 暂时只检查手动触发，排除路径检查可能带来的问题
+    if: "github.event_name == 'workflow_dispatch'"
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
@@ -62,7 +62,7 @@ jobs:
           echo "🚀 触发 Greasy Fork Webhook..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
-            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' 
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}")
 
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
@@ -85,7 +85,7 @@ jobs:
           echo "${COMMIT_LOG}" >> release-notes.md
           echo "" >> release-notes.md
           echo "### 📦 安装方式" >> release-notes.md
-          echo "**Greasy Fork (推荐):**" >> release-notes.md
+          echo "**Greasy Fork (推荐): 环境**" >> release-notes.md
           echo "https://greasyfork.org/zh-CN/scripts/521357" >> release-notes.md
           echo "" >> release-notes.md
           echo "**直接安装:**" >> release-notes.md
@@ -113,8 +113,8 @@ jobs:
 
   # 任务二：部署到 GitHub Pages
   deploy-pages:
-    # 仅当 docs 目录变化时运行
-    if: "contains(github.event.head_commit.modified, 'docs/') || github.event_name == 'workflow_dispatch'"
+    # 暂时只检查手动触发，排除路径检查可能带来的问题
+    if: "github.event_name == 'workflow_dispatch'"
     runs-on: ubuntu-latest
     environment:
       name: github-pages
