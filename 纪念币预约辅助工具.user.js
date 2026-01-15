@@ -25,8 +25,6 @@
 // @downloadURL https://update.greasyfork.org/scripts/521357/%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7.user.js
 // @updateURL  https://update.greasyfork.org/scripts/521357/%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7.user.js
 // ==/UserScript==
-
-
 // ====================================================================================
 const bankObj = {
   建设银行: {
