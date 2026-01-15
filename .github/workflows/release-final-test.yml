@@ -5,12 +5,13 @@ on:
     branches:
       - main
     paths:
-      # 唯一的区别：使用纯英文文件名
       - 'test-script.js'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write       # <--- 添加这一行
+  id-token: write    # <--- 添加这一行
   releases: write
 
 jobs:
