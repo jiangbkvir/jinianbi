@@ -75,31 +75,29 @@ jobs:
 
       - name: 生成 Release Notes
         id: generate-notes
+        # 简化生成 Release Notes 的逻辑，避免 YAML 解析问题
         run: |
           VERSION="${{ steps.check-version.outputs.version }}"
           COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
+          echo "## Release v${VERSION}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### 📝 更新内容" >> release-notes.md
+          echo "${COMMIT_LOG}" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### 📦 安装方式" >> release-notes.md
+          echo "**Greasy Fork (推荐):**" >> release-notes.md
+          echo "https://greasyfork.org/zh-CN/scripts/521357" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "**直接安装:**" >> release-notes.md
+          echo "点击下方的 \`纪念币预约辅助工具.user.js\` 文件" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### 🔗 相关链接" >> release-notes.md
+          echo "- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)" >> release-notes.md
+          echo "- [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "---" >> release-notes.md
+          echo "自动同步到 Greasy Fork" >> release-notes.md
 
-          cat <<EOF > release-notes.md
-## Release v${VERSION}
-
-### 📝 更新内容
-${COMMIT_LOG}
-
-### 📦 安装方式
-**Greasy Fork (推荐):**
-https://greasyfork.org/zh-CN/scripts/521357
-
-**直接安装:**
-点击下方的 `纪念币预约辅助工具.user.js` 文件
-
-### 🔗 相关链接
-- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
-- [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)
-
----
-自动同步到 Greasy Fork
-EOF
-          # 确认文件已生成
           ls -l release-notes.md
           cat release-notes.md
 
@@ -108,8 +106,7 @@ EOF
         with:
           tag_name: v${{ steps.check-version.outputs.version }}
           name: Release v${{ steps.check-version.outputs.version }}
-          # 直接使用文件名，而不是上一步的输出
-          body_path: "release-notes.md"
+          body_path: release-notes.md
           files: 纪念币预约辅助工具.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
