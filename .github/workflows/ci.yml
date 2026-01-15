@@ -9,11 +9,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 检测脚本是否发生变化
+      - name: 检测脚本是否发生变化及版本号
         id: check
         run: |
           FILE="纪念币预约辅助工具.user.js"
 
+          # 检测脚本改动
           if git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "🔹 脚本有修改"
@@ -22,7 +23,7 @@ jobs:
             echo "🔹 脚本未修改"
           fi
 
-          # 检查版本号
+          # 仅在脚本改动时检查版本号
           if [ "$(git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; echo $?)" -eq 0 ]; then
             CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
             PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
@@ -79,5 +80,8 @@ jobs:
           files: 纪念币预约辅助工具.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 输出 Release 成功信息
+        if: steps.check.outputs.update == 'true'
         run: |
           echo "✅ GitHub Release 已创建，版本号 v${{ steps.check.outputs.version }}"
