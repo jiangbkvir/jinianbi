@@ -1,22 +1,14 @@
 name: Final Test Workflow
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'test-script.js'
   workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write       # <--- 添加这一行
-  id-token: write    # <--- 添加这一行
-  releases: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Echo
-      run: echo "Workflow triggered successfully by change in test-script.js"
+      run: echo "Hello World from Final Test Workflow!"
