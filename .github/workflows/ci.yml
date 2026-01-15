@@ -20,11 +20,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # =========================
-  # Greasy Fork 同步 + Release
-  # =========================
   greasyfork:
-    if: contains(github.event.head_commit.modified, '纪念币预约辅助工具.user.js')
     runs-on: ubuntu-latest
 
     steps:
@@ -33,7 +29,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 判断是否修改脚本
+        id: detect
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "纪念币预约辅助工具.user.js"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 检查版本号是否更新
+        if: steps.detect.outputs.changed == 'true'
         id: check-version
         run: |
           FILE="纪念币预约辅助工具.user.js"
@@ -50,15 +56,14 @@ jobs:
           fi
 
           if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
-            echo "❌ 已修改脚本但版本号未更新"
+            echo "❌ 脚本已修改但版本号未更新"
             exit 1
           fi
 
-          echo "should_sync=true" >> $GITHUB_OUTPUT
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
       - name: 触发 Greasy Fork 同步
-        if: steps.check-version.outputs.should_sync == 'true'
+        if: steps.detect.outputs.changed == 'true'
         run: |
           curl -X POST \
             -H "Content-Type: application/json" \
@@ -66,7 +71,7 @@ jobs:
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
 
       - name: 生成 Release Notes
-        if: steps.check-version.outputs.should_sync == 'true'
+        if: steps.detect.outputs.changed == 'true'
         run: |
           VERSION="${{ steps.check-version.outputs.version }}"
           LOG=$(git log -1 --pretty=format:"- %s")
@@ -74,18 +79,15 @@ jobs:
           cat <<EOF > release-notes.md
 ## Release v${VERSION}
 
-### 📝 更新内容
+### 更新内容
 ${LOG}
-
-### 📦 安装方式
-https://greasyfork.org/zh-CN/scripts/521357
 
 ---
 自动同步到 Greasy Fork
 EOF
 
       - name: 创建 GitHub Release
-        if: steps.check-version.outputs.should_sync == 'true'
+        if: steps.detect.outputs.changed == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.check-version.outputs.version }}
@@ -95,11 +97,7 @@ EOF
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # =================
-  # GitHub Pages 部署
-  # =================
   pages:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.modified, 'docs/')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -109,14 +107,26 @@ EOF
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 判断是否需要部署 Pages
+        id: detect
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "^docs/"; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 配置 Pages
+        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/configure-pages@v4
 
       - name: 上传 Pages 构建产物
+        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
       - name: 部署到 GitHub Pages
+        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         id: deploy
         uses: actions/deploy-pages@v4
