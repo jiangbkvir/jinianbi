@@ -107,7 +107,7 @@ jobs:
           tag_name: v${{ steps.check-version.outputs.version }}
           name: Release v${{ steps.check-version.outputs.version }}
           body_path: release-notes.md
-          files: 纪念币预约辅助工具.user.js
+          files: "纪念币预约辅助工具.user.js" # 修复：为包含中文字符的文件名添加引号
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
