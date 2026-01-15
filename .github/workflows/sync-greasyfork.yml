@@ -80,7 +80,7 @@ jobs:
           fi
 
           # 生成规范的 Release Notes
-          cat > release-notes.md <<EOF
+          cat > release-notes.md <<'EOF'
 ## v${VERSION}
 
 ### 📝 更新内容
@@ -90,10 +90,10 @@ ${COMMIT_LOG}
 ### 📦 安装方式
 
 **Greasy Fork (推荐):**
-[https://greasyfork.org/zh-CN/scripts/521357-纪念币预约辅助工具](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
+https://greasyfork.org/zh-CN/scripts/521357
 
 **直接安装:**
-点击下方的 \`纪念币预约辅助工具.user.js\` 文件
+点击下方的 `纪念币预约辅助工具.user.js` 文件
 
 ### 🔗 相关链接
 - [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
@@ -103,6 +103,10 @@ ${COMMIT_LOG}
 ---
 自动同步到 Greasy Fork
 EOF
+
+          # 替换变量
+          sed -i "s/\${VERSION}/${VERSION}/g" release-notes.md
+          sed -i "s/\${COMMIT_LOG}/${COMMIT_LOG}/g" release-notes.md
 
           echo "Release Notes 已生成"
 
