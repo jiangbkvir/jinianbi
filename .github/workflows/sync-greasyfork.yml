@@ -25,25 +25,31 @@ jobs:
       - name: 检查版本号是否更新
         id: check-version
         run: |
-          echo "检查纪念币预约辅助工具.user.js 版本变化..."
+          echo "检查纪念币预约辅助工具.user.js 版本..."
 
-          # 获取当前版本号
+          # 获取当前脚本文件的版本号
           CURRENT_VERSION=$(grep -m1 "@version" 纪念币预约辅助工具.user.js | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
-          echo "当前版本: $CURRENT_VERSION"
+          echo "脚本当前版本: $CURRENT_VERSION"
 
-          # 获取上一个提交的版本号（使用 origin/main 作为基准）
-          git fetch origin main --depth=10
-          PREV_VERSION=$(git show origin/main~1:纪念币预约辅助工具.user.js 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+          # 检查是否有版本号
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "should_sync=false" >> $GITHUB_OUTPUT
+            echo "❌ 未找到版本号，跳过同步"
+            exit 0
+          fi
+
+          # 获取上一个 commit 的版本号（用于对比）
+          PREV_VERSION=$(git show HEAD~1:纪念币预约辅助工具.user.js 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
           echo "上一个版本: $PREV_VERSION"
 
-          # 严格检查：版本号必须不同且都不为空
-          if [ -n "$CURRENT_VERSION" ] && [ -n "$PREV_VERSION" ] && [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
+          # 只要版本号存在且有变化，就触发同步
+          if [ -n "$CURRENT_VERSION" ] && [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
             echo "should_sync=true" >> $GITHUB_OUTPUT
             echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-            echo "✅ 版本号已更新: $PREV_VERSION → $CURRENT_VERSION，将触发同步"
+            echo "✅ 脚本版本已更新: $PREV_VERSION → $CURRENT_VERSION，将触发同步"
           else
             echo "should_sync=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ 版本号未变化（当前: $CURRENT_VERSION, 上一个: $PREV_VERSION），跳过同步"
+            echo "ℹ️ 脚本版本未变化或首次发布，版本: $CURRENT_VERSION"
           fi
 
       - name: 触发 Greasy Fork 同步
@@ -68,15 +74,22 @@ jobs:
         if: steps.check-version.outputs.should_sync == 'true'
         id: release-notes
         run: |
-          VERSION="${{ steps.check-version.outputs.version }}"
+          # 直接从脚本文件读取版本号
+          VERSION=$(grep -m1 "@version" 纪念币预约辅助工具.user.js | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
+          echo "版本: $VERSION"
 
           # 获取当前和上一个版本间的所有 commits
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -z "$PREV_TAG" ]; then
-            COMMIT_LOG=$(git log --pretty=format:"- %s" --since="24 hours ago")
+            COMMIT_LOG=$(git log --pretty=format:"- %s" --since="7 days ago")
           else
             COMMIT_LOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s")
+          fi
+
+          # 如果没有 commit 日志，使用最后一条提交
+          if [ -z "$COMMIT_LOG" ]; then
+            COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
           fi
 
           # 生成规范的 Release Notes
@@ -104,13 +117,18 @@ https://greasyfork.org/zh-CN/scripts/521357
 自动同步到 Greasy Fork
 RELEASE_EOF
 
-          # 替换变量
+          # 替换版本号占位符
           sed -i.bak "s/{VERSION}/${VERSION}/g" release-notes.md
-          sed -i.bak "/{COMMIT_LOG}/r <(echo \"${COMMIT_LOG}\")" release-notes.md
-          sed -i.bak "/{COMMIT_LOG}/d" release-notes.md
+          
+          # 处理 commit log（包含换行）
+          COMMIT_LOG_ESCAPED=$(printf '%s\n' "$COMMIT_LOG" | sed -e 's/[\/&]/\\&/g')
+          sed -i.bak "/{COMMIT_LOG}/c\\
+${COMMIT_LOG_ESCAPED}" release-notes.md
+          
           rm -f release-notes.md.bak
 
           echo "Release Notes 已生成"
+          cat release-notes.md
 
       - name: 创建 GitHub Release
         if: steps.check-version.outputs.should_sync == 'true'
