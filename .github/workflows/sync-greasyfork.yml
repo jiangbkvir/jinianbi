@@ -93,7 +93,7 @@ jobs:
           fi
 
           # 生成规范的 Release Notes
-          cat > release-notes.md <<EOF
+          cat > release-notes.md <<'EOF'
 ## Release v$VERSION
 
 ### 📝 更新内容
@@ -106,7 +106,7 @@ $COMMIT_LOG
 https://greasyfork.org/zh-CN/scripts/521357
 
 **直接安装:**
-点击下方的 \`纪念币预约辅助工具.user.js\` 文件
+点击下方的 `纪念币预约辅助工具.user.js` 文件
 
 ### 🔗 相关链接
 - [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
