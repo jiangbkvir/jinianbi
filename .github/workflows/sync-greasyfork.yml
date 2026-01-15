@@ -80,12 +80,12 @@ jobs:
           fi
 
           # 生成规范的 Release Notes
-          cat > release-notes.md <<'EOF'
-## v${VERSION}
+          cat > release-notes.md << 'RELEASE_EOF'
+## Release v{VERSION}
 
 ### 📝 更新内容
 
-${COMMIT_LOG}
+{COMMIT_LOG}
 
 ### 📦 安装方式
 
@@ -102,11 +102,13 @@ https://greasyfork.org/zh-CN/scripts/521357
 
 ---
 自动同步到 Greasy Fork
-EOF
+RELEASE_EOF
 
           # 替换变量
-          sed -i "s/\${VERSION}/${VERSION}/g" release-notes.md
-          sed -i "s/\${COMMIT_LOG}/${COMMIT_LOG}/g" release-notes.md
+          sed -i.bak "s/{VERSION}/${VERSION}/g" release-notes.md
+          sed -i.bak "/{COMMIT_LOG}/r <(echo \"${COMMIT_LOG}\")" release-notes.md
+          sed -i.bak "/{COMMIT_LOG}/d" release-notes.md
+          rm -f release-notes.md.bak
 
           echo "Release Notes 已生成"
 
