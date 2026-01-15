@@ -24,12 +24,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 检出代码
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 判断是否修改脚本
+      - name: Detect script change
         id: detect
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q "纪念币预约辅助工具.user.js"; then
@@ -38,31 +38,27 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 检查版本号是否更新
+      - name: Check version
         if: steps.detect.outputs.changed == 'true'
-        id: check-version
+        id: version
         run: |
           FILE="纪念币预约辅助工具.user.js"
+          CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+          PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
 
-          CURRENT_VERSION=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
-          PREV_VERSION=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
-
-          echo "当前版本: $CURRENT_VERSION"
-          echo "上一个版本: $PREV_VERSION"
-
-          if [ -z "$CURRENT_VERSION" ]; then
-            echo "❌ 未找到 @version"
+          if [ -z "$CUR" ]; then
+            echo "no version"
             exit 1
           fi
 
-          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
-            echo "❌ 脚本已修改但版本号未更新"
+          if [ "$CUR" = "$PRE" ]; then
+            echo "version not bumped"
             exit 1
           fi
 
-          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$CUR" >> $GITHUB_OUTPUT
 
-      - name: 触发 Greasy Fork 同步
+      - name: Trigger GreasyFork
         if: steps.detect.outputs.changed == 'true'
         run: |
           curl -X POST \
@@ -70,28 +66,23 @@ jobs:
             -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
 
-      - name: 生成 Release Notes
+      - name: Generate release notes
         if: steps.detect.outputs.changed == 'true'
         run: |
-          VERSION="${{ steps.check-version.outputs.version }}"
-          LOG=$(git log -1 --pretty=format:"- %s")
+          echo "## Release v${{ steps.version.outputs.version }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### 更新内容" >> release-notes.md
+          git log -1 --pretty=format:"- %s" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "---" >> release-notes.md
+          echo "自动同步到 Greasy Fork" >> release-notes.md
 
-          cat <<EOF > release-notes.md
-## Release v${VERSION}
-
-### 更新内容
-${LOG}
-
----
-自动同步到 Greasy Fork
-EOF
-
-      - name: 创建 GitHub Release
+      - name: Create GitHub Release
         if: steps.detect.outputs.changed == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.check-version.outputs.version }}
-          name: Release v${{ steps.check-version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
           body_path: release-notes.md
           files: 纪念币预约辅助工具.user.js
         env:
@@ -104,10 +95,9 @@ EOF
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 判断是否需要部署 Pages
+      - name: Detect docs change
         id: detect
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q "^docs/"; then
@@ -116,17 +106,17 @@ EOF
             echo "deploy=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 配置 Pages
+      - name: Setup Pages
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/configure-pages@v4
 
-      - name: 上传 Pages 构建产物
+      - name: Upload Pages
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
-      - name: 部署到 GitHub Pages
+      - name: Deploy Pages
         if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
         id: deploy
         uses: actions/deploy-pages@v4
