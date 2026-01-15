@@ -71,26 +71,13 @@ jobs:
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
           echo "✅ Greasy Fork 同步完成"
 
-      - name: 生成发布说明（Release Notes）
-        if: steps.check.outputs.update == 'true'
-        run: |
-          VERSION=${{ steps.check.outputs.version }}
-          echo "## Release v$VERSION" > release-notes.md
-          echo "" >> release-notes.md
-          echo "### 更新内容" >> release-notes.md
-          git log -1 --pretty=format:"- %s" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "---" >> release-notes.md
-          echo "自动同步到 Greasy Fork" >> release-notes.md
-          echo "🔹 Release Notes 生成完成"
-
       - name: 创建 GitHub Release
         if: steps.check.outputs.update == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.check.outputs.version }}
           name: Release v${{ steps.check.outputs.version }}
-          body_path: release-notes.md
+          body_path: release.md
           files: 纪念币预约辅助工具.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
