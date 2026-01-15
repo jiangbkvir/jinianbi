@@ -1,4 +1,4 @@
-name: CI / Release / Pages
+name: CI / GreasyFork / Pages
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -50,7 +50,7 @@ jobs:
           fi
 
           if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
-            echo "❌ 脚本已修改但版本号未更新"
+            echo "❌ 已修改脚本但版本号未更新"
             exit 1
           fi
 
@@ -81,7 +81,7 @@ ${LOG}
 https://greasyfork.org/zh-CN/scripts/521357
 
 ---
-自动同步
+自动同步到 Greasy Fork
 EOF
 
       - name: 创建 GitHub Release
@@ -99,22 +99,24 @@ EOF
   # GitHub Pages 部署
   # =================
   pages:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.modified, 'docs/')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.modified, 'docs/')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-      - uses: actions/configure-pages@v4
+      - name: 配置 Pages
+        uses: actions/configure-pages@v4
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: 上传 Pages 构建产物
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
-      - id: deploy
+      - name: 部署到 GitHub Pages
+        id: deploy
         uses: actions/deploy-pages@v4
