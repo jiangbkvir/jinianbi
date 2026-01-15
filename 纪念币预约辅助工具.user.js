@@ -704,6 +704,7 @@ const bankObj = {
                     padding: '2px 6px',
                     flexShrink: '0'
                 });
+                copyButton.className = 'copy-btn';
                 // 设置 tabindex="-1"，使 Tab 键不会跳到复制按钮
                 copyButton.setAttribute('tabindex', '-1');
 
@@ -811,9 +812,9 @@ const bankObj = {
                 const contentArea = this.createContentArea(collapsed);
                 card.appendChild(contentArea);
 
-                // 创建字段行
-                const fields = ['name', 'idCard', 'mobile', 'branch', 'amount'];
-                const labels = ['姓名', '身份证', '手机号', '网点', '数量'];
+                // 创建字段行 - 只显示姓名、身份证、手机号（网点和数量保留数据但不显示）
+                const fields = ['name', 'idCard', 'mobile'];
+                const labels = ['姓名', '身份证', '手机号'];
 
                 fields.forEach((field, idx) => {
                     const { row } = this.createFieldRow(field, labels[idx], entry[field], entry, (field, entry) => {
@@ -945,10 +946,20 @@ const bankObj = {
         document.addEventListener('touchend', dragEnd);
 
         function dragStart(e) {
-            const target = e.target.closest('#formContainer, #expandButton');
-            if (!target) return;
+            // 允许从展开按钮拖拽
+            const expandButton = e.target.closest('#expandButton');
+            if (expandButton) {
+                draggedElement = expandButton;
+            } else {
+                // 检查是否点击在交互元素上（如输入框、复制按钮等），如果是则不触发拖拽
+                const interactiveElements = e.target.closest('input, .copy-btn, [role="button"]:not(#expandButton)');
+                if (interactiveElements) return;
 
-            draggedElement = target;
+                // 允许从容器的其他区域拖拽（例如面板头部）
+                if (!container.contains(e.target)) return;
+                
+                draggedElement = container;
+            }
             const rect = draggedElement.getBoundingClientRect();
             const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
             const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
