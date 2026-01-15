@@ -7,6 +7,11 @@ on:
     paths:
       - '纪念币预约辅助工具.user.js'
 
+# 设置工作流权限
+permissions:
+  contents: write
+  releases: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -65,32 +70,39 @@ jobs:
         run: |
           VERSION="${{ steps.check-version.outputs.version }}"
 
-          # 获取最新的提交信息
-          COMMIT_MSG=$(git log -1 --pretty=%B)
+          # 获取当前和上一个版本间的所有 commits
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            COMMIT_LOG=$(git log --pretty=format:"- %s" --since="24 hours ago")
+          else
+            COMMIT_LOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s")
+          fi
 
-          # 生成 Release Notes
+          # 生成规范的 Release Notes
           cat > release-notes.md <<EOF
-          ## 🎉 版本 ${VERSION}
+## v${VERSION}
 
-          ### 📝 更新内容
-          ${COMMIT_MSG}
+### 📝 更新内容
 
-          ### 📦 安装方式
+${COMMIT_LOG}
 
-          **Greasy Fork (推荐):**
-          [https://greasyfork.org/zh-CN/scripts/521357-纪念币预约辅助工具](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
+### 📦 安装方式
 
-          **直接安装:**
-          点击下方的 \`纪念币预约辅助工具.user.js\` 文件即可安装
+**Greasy Fork (推荐):**
+[https://greasyfork.org/zh-CN/scripts/521357-纪念币预约辅助工具](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
 
-          ### 🔗 相关链接
-          - [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
-          - [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)
+**直接安装:**
+点击下方的 \`纪念币预约辅助工具.user.js\` 文件
 
-          ---
+### 🔗 相关链接
+- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
+- [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)
+- [发布历史](https://github.com/jiangbkvir/jinianbi/releases)
 
-          🤖 此版本已自动同步到 [Greasy Fork](https://greasyfork.org/zh-CN/scripts/521357)
-          EOF
+---
+自动同步到 Greasy Fork
+EOF
 
           echo "Release Notes 已生成"
 
@@ -107,6 +119,7 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 同步失败提示
         if: steps.check-version.outputs.should_sync == 'false'
