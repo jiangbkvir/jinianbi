@@ -1,0 +1,111 @@
+name: 同步到 Greasy Fork
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '纪念币预约辅助工具.user.js'
+
+# 设置工作流权限
+permissions:
+  contents: write
+  releases: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 增加深度以获取完整的提交历史
+
+      - name: 检查版本号是否更新
+        id: check-version
+        run: |
+          FILE="纪念币预约辅助工具.user.js"
+          echo "检查 $FILE 版本..."
+
+          # 获取当前脚本文件的版本号
+          CURRENT_VERSION=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//')
+          echo "脚本当前版本: $CURRENT_VERSION"
+
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "❌ 错误：未在脚本中找到 @version"
+            exit 1
+          fi
+
+          # 获取上一个 commit 的版本号
+          PREV_VERSION=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+          echo "上一个版本: $PREV_VERSION"
+
+          # 强校验逻辑：如果你直接 push 到 main 但没改版本号，直接让任务失败
+          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+            echo "=========================================="
+            echo "❌ 报错：脚本内容已修改，但版本号 ($CURRENT_VERSION) 未更新！"
+            echo "请修改 @version 后重新提交，否则 Greasy Fork 不会同步。"
+            echo "=========================================="
+            exit 1 
+          fi
+
+          echo "should_sync=true" >> $GITHUB_OUTPUT
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ 版本已从 $PREV_VERSION 更新至 $CURRENT_VERSION"
+
+      - name: 触发 Greasy Fork 同步
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          echo "🚀 触发 Greasy Fork Webhook..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
+            "${{ secrets.GREASYFORK_WEBHOOK_URL }}")
+
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
+            echo "✅ Webhook 触发成功 (HTTP $RESPONSE)"
+          else
+            echo "❌ Webhook 失败 (HTTP $RESPONSE)"
+            exit 1
+          fi
+
+      - name: 生成 Release Notes
+        if: steps.check-version.outputs.should_sync == 'true'
+        run: |
+          VERSION="${{ steps.check-version.outputs.version }}"
+          # 获取最后一条提交信息作为更新内容
+          COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
+
+          # 修复 101 行报错：移除 EOF 的单引号，并使用标准的 shell 变量解析
+          cat <<EOF > release-notes.md
+## Release v${VERSION}
+
+### 📝 更新内容
+${COMMIT_LOG}
+
+### 📦 安装方式
+**Greasy Fork (推荐):**
+https://greasyfork.org/zh-CN/scripts/521357
+
+**直接安装:**
+点击下方的 `纪念币预约辅助工具.user.js` 文件
+
+### 🔗 相关链接
+- [使用文档](https://github.com/jiangbkvir/jinianbi/blob/main/README.md)
+- [问题反馈](https://github.com/jiangbkvir/jinianbi/issues)
+
+---
+自动同步到 Greasy Fork
+EOF
+
+      - name: 创建 GitHub Release
+        if: steps.check-version.outputs.should_sync == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.check-version.outputs.version }}
+          name: Release v${{ steps.check-version.outputs.version }}
+          body_path: release-notes.md
+          files: 纪念币预约辅助工具.user.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
