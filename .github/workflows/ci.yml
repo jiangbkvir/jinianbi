@@ -1,8 +1,27 @@
+name: 持续集成 / Greasy Fork 同步 / Pages 部署
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '纪念币预约辅助工具.user.js'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   greasyfork:
     name: 同步 Greasy Fork 并发布 Release
     runs-on: ubuntu-latest
-
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -13,8 +32,6 @@ jobs:
         id: check
         run: |
           FILE="纪念币预约辅助工具.user.js"
-
-          # 检测脚本改动
           if git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "🔹 脚本有修改"
@@ -23,16 +40,13 @@ jobs:
             echo "🔹 脚本未修改"
           fi
 
-          # 仅在脚本改动时检查版本号
           if [ "$(git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; echo $?)" -eq 0 ]; then
             CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
             PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
-
             if [ -z "$CUR" ]; then
               echo "❌ 未找到 @version"
               exit 1
             fi
-
             if [ "$CUR" = "$PRE" ]; then
               echo "⚠️ 脚本修改了但版本号未更新，不执行发布"
               echo "update=false" >> $GITHUB_OUTPUT
