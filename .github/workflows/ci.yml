@@ -1,23 +1,3 @@
-name: 持续集成 / Greasy Fork 同步 / Pages 部署
-
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - '纪念币预约辅助工具.user.js'
-      - 'docs/**'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   greasyfork:
     name: 同步 Greasy Fork 并发布 Release
@@ -30,95 +10,74 @@ jobs:
           fetch-depth: 0
 
       - name: 检测脚本是否发生变化
-        id: detect
-        run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q "纪念币预约辅助工具.user.js"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 校验脚本版本号是否更新
-        if: steps.detect.outputs.changed == 'true'
-        id: version
+        id: check
         run: |
           FILE="纪念币预约辅助工具.user.js"
-          CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
-          PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
 
-          if [ -z "$CUR" ]; then
-            echo "❌ 未找到 @version"
-            exit 1
+          if git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "🔹 脚本有修改"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "🔹 脚本未修改"
           fi
 
-          if [ "$CUR" = "$PRE" ]; then
-            echo "❌ 已修改脚本但版本号未更新"
-            exit 1
-          fi
+          # 检查版本号
+          if [ "$(git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; echo $?)" -eq 0 ]; then
+            CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+            PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
 
-          echo "version=$CUR" >> $GITHUB_OUTPUT
+            if [ -z "$CUR" ]; then
+              echo "❌ 未找到 @version"
+              exit 1
+            fi
+
+            if [ "$CUR" = "$PRE" ]; then
+              echo "⚠️ 脚本修改了但版本号未更新，不执行发布"
+              echo "update=false" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              echo "✅ 版本号更新，准备发布 v$CUR"
+              echo "version=$CUR" >> $GITHUB_OUTPUT
+              echo "update=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "脚本未修改，无需发布"
+            echo "update=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: 触发 Greasy Fork 同步
-        if: steps.detect.outputs.changed == 'true'
+        if: steps.check.outputs.update == 'true'
         run: |
+          echo "🔹 同步到 Greasy Fork..."
           curl -X POST \
             -H "Content-Type: application/json" \
             -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
+          echo "✅ Greasy Fork 同步完成"
 
       - name: 生成发布说明（Release Notes）
-        if: steps.detect.outputs.changed == 'true'
+        if: steps.check.outputs.update == 'true'
         run: |
-          echo "## Release v${{ steps.version.outputs.version }}" > release-notes.md
+          VERSION=${{ steps.check.outputs.version }}
+          echo "## Release v$VERSION" > release-notes.md
           echo "" >> release-notes.md
           echo "### 更新内容" >> release-notes.md
           git log -1 --pretty=format:"- %s" >> release-notes.md
           echo "" >> release-notes.md
           echo "---" >> release-notes.md
           echo "自动同步到 Greasy Fork" >> release-notes.md
+          echo "🔹 Release Notes 生成完成"
 
       - name: 创建 GitHub Release
-        if: steps.detect.outputs.changed == 'true'
+        if: steps.check.outputs.update == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.check.outputs.version }}
+          name: Release v${{ steps.check.outputs.version }}
           body_path: release-notes.md
           files: 纪念币预约辅助工具.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  pages:
-    name: 部署 GitHub Pages
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
-    steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 检测文档是否发生变化
-        id: detect
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q "^docs/"; then
-            echo "deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 配置 GitHub Pages
-        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/configure-pages@v4
-
-      - name: 上传 Pages 构建产物
-        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-
-      - name: 部署到 GitHub Pages
-        if: steps.detect.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch'
-        id: deploy
-        uses: actions/deploy-pages@v4
+          echo "✅ GitHub Release 已创建，版本号 v${{ steps.check.outputs.version }}"
