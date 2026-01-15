@@ -99,14 +99,17 @@ https://greasyfork.org/zh-CN/scripts/521357
 ---
 自动同步到 Greasy Fork
 EOF
-          echo "notes_path=release-notes.md" >> $GITHUB_OUTPUT
+          # 确认文件已生成
+          ls -l release-notes.md
+          cat release-notes.md
 
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.check-version.outputs.version }}
           name: Release v${{ steps.check-version.outputs.version }}
-          body_path: ${{ steps.generate-notes.outputs.notes_path }}
+          # 直接使用文件名，而不是上一步的输出
+          body_path: "release-notes.md"
           files: 纪念币预约辅助工具.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
