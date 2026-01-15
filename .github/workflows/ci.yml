@@ -28,11 +28,38 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 校验脚本版本号 (ISOLATION TEST)
+      - name: 校验脚本版本号
         id: check
         run: |
-          echo "This is a test. Hardcoding update=false"
-          echo "update=false" >> $GITHUB_OUTPUT
+          FILE="纪念币预约辅助工具.user.js"
+          
+          # Because of the 'on.push.paths' trigger, this workflow only runs
+          # when the script has changed. We just need to check the version.
+          echo "🔹 脚本有修改，开始校验版本号..."
+
+          CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+          
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            # This is a new branch, so there is no previous version.
+            PRE=""
+          else
+            # Get the version from the commit before the push.
+            PRE=$(git show ${{ github.event.before }}:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
+          fi
+
+          if [ -z "$CUR" ]; then
+            echo "❌ 未找到 @version 字段"
+            exit 1
+          fi
+
+          if [ "$CUR" = "$PRE" ]; then
+            echo "⚠️ 脚本已修改但版本号 (v$CUR) 未更新，跳过发布。"
+            echo "update=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ 版本号已更新: v$PRE -> v$CUR。准备发布。"
+            echo "version=$CUR" >> $GITHUB_OUTPUT
+            echo "update=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: 触发 Greasy Fork 同步
         if: steps.check.outputs.update == 'true'
