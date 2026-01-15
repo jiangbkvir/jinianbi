@@ -28,37 +28,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 检测脚本是否发生变化及版本号
+      - name: 校验脚本版本号
         id: check
         run: |
           FILE="纪念币预约辅助工具.user.js"
-          if git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "🔹 脚本有修改"
+          
+          # Because of the 'on.push.paths' trigger, this workflow only runs
+          # when the script has changed. We just need to check the version.
+          echo "🔹 脚本有修改，开始校验版本号..."
+
+          CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+          
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            # This is a new branch, so there is no previous version.
+            PRE=""
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "🔹 脚本未修改"
+            # Get the version from the commit before the push.
+            PRE=$(git show ${{ github.event.before }}:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
           fi
 
-          if [ "$(git diff --name-only HEAD~1 HEAD | grep -q "$FILE"; echo $?)" -eq 0 ]; then
-            CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
-            PRE=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
-            if [ -z "$CUR" ]; then
-              echo "❌ 未找到 @version"
-              exit 1
-            fi
-            if [ "$CUR" = "$PRE" ]; then
-              echo "⚠️ 脚本修改了但版本号未更新，不执行发布"
-              echo "update=false" >> $GITHUB_OUTPUT
-              exit 0
-            else
-              echo "✅ 版本号更新，准备发布 v$CUR"
-              echo "version=$CUR" >> $GITHUB_OUTPUT
-              echo "update=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "脚本未修改，无需发布"
+          if [ -z "$CUR" ]; then
+            echo "❌ 未找到 @version 字段"
+            exit 1
+          fi
+
+          if [ "$CUR" = "$PRE" ]; then
+            echo "⚠️ 脚本已修改但版本号 (v$CUR) 未更新，跳过发布。"
             echo "update=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ 版本号已更新: v$PRE -> v$CUR。准备发布。"
+            echo "version=$CUR" >> $GITHUB_OUTPUT
+            echo "update=true" >> $GITHUB_OUTPUT
           fi
 
       - name: 触发 Greasy Fork 同步
