@@ -92,13 +92,18 @@ jobs:
             COMMIT_LOG=$(git log -1 --pretty=format:"- %s")
           fi
 
-          # 生成规范的 Release Notes
-          cat > release-notes.md << 'RELEASE_EOF'
-## Release v{VERSION}
+          # 生成规范的 Release Notes - 使用 Python 避免 shell 转义问题
+          python3 << 'PYTHON_EOF'
+import os
+
+version = os.environ.get('VERSION', 'Unknown')
+commit_log = os.environ.get('COMMIT_LOG', 'No commits')
+
+content = f"""## Release v{version}
 
 ### 📝 更新内容
 
-{COMMIT_LOG}
+{commit_log}
 
 ### 📦 安装方式
 
@@ -115,20 +120,16 @@ https://greasyfork.org/zh-CN/scripts/521357
 
 ---
 自动同步到 Greasy Fork
-RELEASE_EOF
+"""
 
-          # 替换版本号占位符
-          sed -i.bak "s/{VERSION}/${VERSION}/g" release-notes.md
+          with open('release-notes.md', 'w', encoding='utf-8') as f:
+              f.write(content)
           
-          # 处理 commit log（包含换行）
-          COMMIT_LOG_ESCAPED=$(printf '%s\n' "$COMMIT_LOG" | sed -e 's/[\/&]/\\&/g')
-          sed -i.bak "/{COMMIT_LOG}/c\\
-${COMMIT_LOG_ESCAPED}" release-notes.md
+          print("Release Notes 已生成")
+PYTHON_EOF
           
-          rm -f release-notes.md.bak
-
-          echo "Release Notes 已生成"
-          cat release-notes.md
+          export VERSION
+          export COMMIT_LOG
 
       - name: 创建 GitHub Release
         if: steps.check-version.outputs.should_sync == 'true'
