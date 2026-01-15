@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - '纪念币预约辅助工具.user.js'
+      - 'script.user.js'
       - 'docs/**'
   workflow_dispatch:
 
@@ -31,7 +31,7 @@ jobs:
       - name: 校验脚本版本号
         id: check
         run: |
-          FILE="纪念币预约辅助工具.user.js"
+          FILE="script.user.js"
           
           # Because of the 'on.push.paths' trigger, this workflow only runs
           # when the script has changed. We just need to check the version.
@@ -78,7 +78,7 @@ jobs:
           tag_name: v${{ steps.check.outputs.version }}
           name: Release v${{ steps.check.outputs.version }}
           body_path: release.md
-          files: 纪念币预约辅助工具.user.js
+          files: script.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
