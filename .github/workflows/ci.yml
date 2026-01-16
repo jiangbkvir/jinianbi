@@ -87,21 +87,33 @@ jobs:
             "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
           echo "✅ Greasy Fork 同步完成"
 
-  deploy-pages:
-    name: 部署 Pages
+  pages:
+    name: 部署 GitHub Pages
     runs-on: ubuntu-latest
-    needs: greasyfork # 确保前面的同步和发布完成后再部署
+    # 仅在 docs 目录变更或手动触发时运行
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'push' && contains(join(github.event.commits.*.modified, ''), 'docs/'))
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 Pages
+      - name: 配置 Pages
         uses: actions/configure-pages@v4
 
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./docs" # 如果你的网页文件在 docs 目录
+          path: "./docs"
 
       - name: 部署到 GitHub Pages
         id: deployment
