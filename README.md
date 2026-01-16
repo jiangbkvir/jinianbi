@@ -2,7 +2,7 @@
 
 > 一个强大的 Tampermonkey 用户脚本，帮助您快速预约纪念币，支持多家银行官网。
 
-[![Version](https://img.shields.io/badge/version-2.2.8-blue.svg)](https://github.com/jiangbkvir/jinianbi)
+[![Version](https://img.shields.io/badge/version-2.2.9-blue.svg)](https://github.com/jiangbkvir/jinianbi)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GreasyFork](https://img.shields.io/badge/GreasyFork-Install-orange.svg)](https://greasyfork.org/zh-CN/scripts/521357-%E7%BA%AA%E5%BF%B5%E5%B8%81%E9%A2%84%E7%BA%A6%E8%BE%85%E5%8A%A9%E5%B7%A5%E5%85%B7)
 
