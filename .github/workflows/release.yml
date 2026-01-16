@@ -1,4 +1,4 @@
-name: 持续集成 / 发布Release / Pages 部署
+name: 发布Release / Pages 部署
 
 on:
   push:
