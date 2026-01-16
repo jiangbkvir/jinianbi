@@ -1,4 +1,4 @@
-name: 持续集成 / Greasy Fork 同步 / Pages 部署
+name: 持续集成 / 发布Release / Pages 部署
 
 on:
   push:
@@ -19,8 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  greasyfork:
-    name: 同步 Greasy Fork 并发布 Release
+  Release:
+    name: 发布 Release
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
