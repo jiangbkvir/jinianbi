@@ -90,16 +90,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 触发 Greasy Fork 同步
-        if: steps.check.outputs.update == 'true'
-        run: |
-          echo "🔹 同步到 Greasy Fork..."
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"ref":"refs/heads/main","repository":{"full_name":"jiangbkvir/jinianbi"}}' \
-            "${{ secrets.GREASYFORK_WEBHOOK_URL }}"
-          echo "✅ Greasy Fork 同步完成"
-
   pages:
     name: 部署 GitHub Pages
     runs-on: ubuntu-latest
