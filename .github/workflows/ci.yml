@@ -81,8 +81,6 @@ jobs:
         if: steps.check.outputs.update == 'true'
         run: |
           VERSION=${{ steps.check.outputs.version }}
-          # 使用 sed 替换 README.md 中的版本号
-          # 假设版本徽章的格式是 [![Version](https://img.shields.io/badge/version-X.X.X-blue.svg)](...)
           sed -i -E "s/(version-)[0-9]+\.[0-9]+\.[0-9]+(-blue\.svg)/\1$VERSION\2/" README.md
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
