@@ -1,0 +1,14 @@
+# 测试报告目录
+.test-reports/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.swp
+*.swo
+*~

@@ -1,0 +1,123 @@
+name: 持续集成 / 发布Release / Pages 部署
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "script.user.js"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  Release:
+    name: 发布 Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 校验脚本版本号
+        id: check
+        run: |
+          FILE="script.user.js"
+
+          # Because of the 'on.push.paths' trigger, this workflow only runs
+          # when the script has changed. We just need to check the version.
+          echo "🔹 脚本有修改，开始校验版本号..."
+
+          CUR=$(grep -m1 "@version" "$FILE" | sed 's/.*@version[[:space:]]*//')
+
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            # This is a new branch, so there is no previous version.
+            PRE=""
+          else
+            # Get the version from the commit before the push.
+            PRE=$(git show ${{ github.event.before }}:"$FILE" 2>/dev/null | grep -m1 "@version" | sed 's/.*@version[[:space:]]*//' || echo "")
+          fi
+
+          if [ -z "$CUR" ]; then
+            echo "❌ 未找到 @version 字段"
+            exit 1
+          fi
+
+          if [ "$CUR" = "$PRE" ]; then
+            echo "⚠️ 脚本已修改但版本号 (v$CUR) 未更新，跳过发布。"
+            echo "update=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ 版本号已更新: v$PRE -> v$CUR。准备发布。"
+            echo "version=$CUR" >> $GITHUB_OUTPUT
+            echo "update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 创建 GitHub Release
+        if: steps.check.outputs.update == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          name: Release v${{ steps.check.outputs.version }}
+          body_path: release.md
+          files: script.user.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 输出 Release 成功信息
+        if: steps.check.outputs.update == 'true'
+        run: |
+          echo "✅ GitHub Release 已创建，版本号 v${{ steps.check.outputs.version }}"
+
+      - name: 更新 README.md 版本徽章
+        if: steps.check.outputs.update == 'true'
+        run: |
+          VERSION=${{ steps.check.outputs.version }}
+          sed -i -E "s/(version-)[0-9]+\.[0-9]+\.[0-9]+(-blue\.svg)/\1$VERSION\2/" README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Docs: Update version badge in README.md to v$VERSION" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pages:
+    name: 部署 GitHub Pages
+    runs-on: ubuntu-latest
+    # 仅在 docs 目录变更或手动触发时运行
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'push' && contains(join(github.event.commits.*.modified, ''), 'docs/'))
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v4
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./docs"
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
