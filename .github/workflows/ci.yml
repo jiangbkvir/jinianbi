@@ -77,6 +77,21 @@ jobs:
         run: |
           echo "✅ GitHub Release 已创建，版本号 v${{ steps.check.outputs.version }}"
 
+      - name: 更新 README.md 版本徽章
+        if: steps.check.outputs.update == 'true'
+        run: |
+          VERSION=${{ steps.check.outputs.version }}
+          # 使用 sed 替换 README.md 中的版本号
+          # 假设版本徽章的格式是 [![Version](https://img.shields.io/badge/version-X.X.X-blue.svg)](...)
+          sed -i -E "s/(version-)[0-9]+\.[0-9]+\.[0-9]+(-blue\.svg)/\1$VERSION\2/" README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Docs: Update version badge in README.md to v$VERSION" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 触发 Greasy Fork 同步
         if: steps.check.outputs.update == 'true'
         run: |
